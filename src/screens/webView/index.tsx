@@ -46,6 +46,7 @@ export const WebViewScreen = () => {
           originWhitelist={['*']}
           onMessage={handleMessage}
           onError={handleError}
+          setSupportMultipleWindows={false}
           style={{
             width,
             height,
