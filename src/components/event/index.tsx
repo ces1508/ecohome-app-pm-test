@@ -25,7 +25,7 @@ export const PMEvent = ({event, handleClose}: IPropsData) => {
         title={show ? closeMessage : showMessage}
       />
       <View style={{display: show ? 'flex' : 'none'}}>
-        <Text style={styles.centerText}>
+        <Text style={[styles.centerText, {color: '#000'}]}>
           {JSON.stringify(message, null, 2)}
         </Text>
       </View>
