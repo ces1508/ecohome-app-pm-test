@@ -3,22 +3,20 @@ import {
   StyleSheet,
   ScrollView,
   RefreshControl,
-  Dimensions,
   BackHandler,
 } from 'react-native';
 import {WebView} from 'react-native-webview';
 import {PMEvent} from '../../components';
 import {EmbedContext} from '../../context/embed';
-import {showToast} from '../../utils/toast';
-
-const {height} = Dimensions.get('screen');
+import {handlerPM, showToast} from '../../utils/';
+import {IPostMessageEvent} from '../../models/';
 
 export const WebViewScreen = () => {
-  // usar ref causa un problema en la primera vez que ingresa
   const [viewportHeight, setViewportHeight] = useState(0);
   const [refreshing, setRefreshing] = useState<boolean>(false);
-  const [showMessage, setShowMessage] = useState<any>(null);
-
+  const [showMessage, setShowMessage] = useState<IPostMessageEvent | null>(
+    null,
+  );
   const webViewRef = useRef<WebView>(null);
 
   const {
@@ -26,7 +24,12 @@ export const WebViewScreen = () => {
   } = useContext(EmbedContext);
 
   const handleMessage = (message: any) => {
-    setShowMessage(JSON.parse(message.nativeEvent.data));
+    const postMesageData = JSON.parse(message.nativeEvent.data);
+    setShowMessage(postMesageData);
+    handlerPM({
+      postMessage: postMesageData,
+      webViewInstance: webViewRef,
+    });
   };
 
   const handleClose = () => setShowMessage(null);
@@ -61,6 +64,13 @@ export const WebViewScreen = () => {
     });
   };
 
+  const runFirst = `
+    document.addEventListener('message', function (event) {
+      window.postMessage(event.data, '*');
+    });
+    true; // note: this is required, or you'll sometimes get silent failures
+  `;
+
   return (
     <ScrollView
       style={styles.wrapper}
@@ -75,7 +85,7 @@ export const WebViewScreen = () => {
       {showMessage && (
         <PMEvent
           event={{
-            title: showMessage?.type ?? 'type no set',
+            title: showMessage?.fn ?? 'type no set',
             message: showMessage?.message ?? 'message no set',
           }}
           handleClose={handleClose}
@@ -85,11 +95,15 @@ export const WebViewScreen = () => {
         <WebView
           ref={webViewRef}
           pullToRefreshEnabled={false}
-          source={{uri: url}}
+          source={{
+            uri: 'https://qa.ciencuadras.com/arriendo?token_id=a6fac615ca534b9abe68fa9d869df502&token_pm=987ewqdfhjktr7654q3243&channel=AL002',
+          }}
           onMessage={handleMessage}
           onError={handleError}
+          mixedContentMode="compatibility"
           allowsBackForwardNavigationGestures={true}
           setSupportMultipleWindows={false}
+          injectedJavaScript={runFirst}
           style={{
             flex: 1,
             width: '100%',
